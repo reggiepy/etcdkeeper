@@ -16,6 +16,7 @@
 	<script type="text/javascript" src="../etcdkeeper/framework/custom/js/common.js"></script>
 	<script type="text/javascript" src="../etcdkeeper/framework/js.cookie-2.1.4.min.js"></script>
 	<script type="text/javascript" src="../etcdkeeper/framework/ace/ace.js" charset="utf-8"></script>
+	<script type="text/javascript" src="../etcdkeeper/framework/snappyjs.min.js" charset="utf-8"></script>
 	<style>
 		#value {
 			position: absolute;
@@ -129,6 +130,7 @@
 		<div id="mode_lua" onclick="changeMode('lua')">lua</div>
 		<div id="mode_javascript" onclick="changeMode('javascript')">javascript</div>
 		<div id="mode_json" onclick="changeMode('json')">json</div>
+		<div id="mode_snappy_json" onclick="changeMode('snappy_json')">snappy_json</div>
 	</div>
 
     <div id="versionMenu" class="easyui-menu">
@@ -365,7 +367,27 @@
 							console.log(data.message);
 							resetValue()
 						} else {
-							editor.getSession().setValue(data.node.value);
+							var value = data.node.value;
+							localStorage.setItem('value', value);
+							value = new Uint8Array(atob(value).split("").map(function(c) {
+								return c.charCodeAt(0);
+							}));
+							var aceMode = Cookies.get('ace-mode', aceMode);
+							// console.log("解压前的数据:", value);
+							if (aceMode === "snappy_json") {
+								try {
+									// 使用 snappyjs 解压
+									let decompressedData = window.SnappyJS.uncompress(value);
+									// console.log("解压后的数据:", decompressedData);
+									value = decompressedData
+								} catch (error) {
+									console.error("解压失败:", error);
+								}
+							}
+							var decoder = new TextDecoder();
+							// 使用 TextDecoder 解码为字符串
+							value= decoder.decode(value);
+							editor.getSession().setValue(value);
 							//if (autoFormat === 'true') {
 								//format(aceMode);
 							//}
@@ -747,6 +769,26 @@
 		}
 
 		function changeMode(mode) {
+			let value = localStorage.getItem('value');
+			// 将 Base64 编码的字符串解码为二进制数据
+			value = new Uint8Array(atob(value).split("").map(function(c) {
+				return c.charCodeAt(0);
+			}));
+			if (mode === "snappy_json") {
+				try {
+					// 使用 snappyjs 解压
+					let decompressedData = window.SnappyJS.uncompress(value);
+					// console.log("解压后的数据:", decompressedData);
+					value = decompressedData
+				} catch (error) {
+					console.error("解压失败:", error);
+				}
+				aceMode = "json"
+			}
+			var decoder = new TextDecoder();
+			// 使用 TextDecoder 解码为字符串
+			value= decoder.decode(value);
+			editor.getSession().setValue(value);
 			aceMode = mode;
 			Cookies.set('ace-mode', aceMode, {expires: 30});
 			$('#' + curIconMode).remove();

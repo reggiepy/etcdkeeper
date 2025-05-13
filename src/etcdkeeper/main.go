@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"crypto/tls"
+	"encoding/base64"
 	"encoding/json"
 	"etcdkeeper/session"
 	_ "etcdkeeper/session/providers/memory"
@@ -87,6 +88,7 @@ func main() {
 		log.Fatal(err)
 	}
 	rootPath := filepath.Dir(wd)
+	//rootPath = "C:\\Users\\wt\\Project\\02 PersonProject\\03 GolangProject\\etcdkeeper"
 
 	// Session management
 	sessmgr, err = session.NewManager("memory", "_etcdkeeper_session", 86400)
@@ -100,6 +102,7 @@ func main() {
 
 	http.Handle("/", http.FileServer(http.Dir(rootPath+"/assets"))) // view static directory
 
+	log.Printf("pid: %d\n", os.Getpid())
 	log.Printf("listening on %s:%d\n", *host, *port)
 	err = http.ListenAndServe(*host+":"+strconv.Itoa(*port), nil)
 	if err != nil {
@@ -739,7 +742,7 @@ func get(w http.ResponseWriter, r *http.Request) {
 					for _, kv := range resp.Kvs {
 						node := make(map[string]interface{})
 						node["key"] = string(kv.Key)
-						node["value"] = string(kv.Value)
+						node["value"] = base64.StdEncoding.EncodeToString(kv.Value)
 						node["dir"] = false
 						if key == string(kv.Key) {
 							node["ttl"] = getTTL(cli, kv.Lease)
@@ -763,7 +766,7 @@ func get(w http.ResponseWriter, r *http.Request) {
 					kv := resp.Kvs[0]
 					node := make(map[string]interface{})
 					node["key"] = string(kv.Key)
-					node["value"] = string(kv.Value)
+					node["value"] = base64.StdEncoding.EncodeToString(kv.Value)
 					node["dir"] = false
 					node["ttl"] = getTTL(cli, kv.Lease)
 					node["createdIndex"] = kv.CreateRevision
