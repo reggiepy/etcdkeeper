@@ -810,6 +810,13 @@
 				editor.clearSelection();
 				editor.navigateFileStart();
 			}
+			if (type === 'snappy_json') {
+				val = JSON.parse(editor.getValue());
+				editor.setValue(JSON.stringify(val, null, 4));
+				editor.getSession().setMode('ace/mode/' + 'json');
+				editor.clearSelection();
+				editor.navigateFileStart();
+			}
 		}
 
 		function changeTreeMode() {
